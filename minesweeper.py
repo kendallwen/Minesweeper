@@ -1,115 +1,113 @@
 import math
 import random
 
+# print a row of the board
+def print_row(row):
+    r = ''
+    for i in range(len(row)):
+        r += str(row[i])
+    return r
+
+# print the entire board
+def print_board(board):
+    for i in range(len(board)):
+        print(print_row(board[i]))
+    return
+
+# create a fully hidden board
+def start_board(rows, columns):
+    hidden_space = '_'
+    board = []
+    for j in range(rows):
+        row = []
+        for i in range(columns):
+            row.append(hidden_space)
+        board.append(row)
+    return board
+
+# create an empty board with a safe space around a player's initial choice
+def empty_board(rows, columns, player_row, player_column):
+    empty_space = ' '
+    free_space = 'f'
+    board = []
+    for j in range(rows):
+        row = []
+        for i in range(columns):
+            row.append(empty_space)
+        board.append(row)
+    board[player_row][player_column] = free_space
+    if player_row>0:
+        board[player_row-1][player_column] = free_space
+        if player_column>0: board[player_row-1][player_column-1] = free_space
+        if player_column<columns-1: board[player_row-1][player_column+1] = free_space
+    if player_column>0:
+        board[player_row][player_column-1] = free_space
+        if player_row<rows-1: board[player_row+1][player_column-1] = free_space
+    if player_row<rows-1:
+        board[player_row+1][player_column] = free_space
+        if player_column<columns-1: board[player_row+1][player_column+1] = free_space
+    if player_column<columns-1: board[player_row][player_column+1] = free_space
+    return board
+
+# add an appropriate number of mines to the board while avoiding the player's
+# initial move
+def add_mines(board, mines, rows, columns):
+    i=0
+    prob = mines/(rows*columns)
+    while i<mines:
+        r = math.floor(random.random()*rows)
+        c = math.floor(random.random()*columns)
+        if board[r][c] != 'f':
+            board[r][c] = 'm'
+            i += 1
+    for j in range(rows):
+        for k in range(columns):
+            if board[j][k] == 'f': board[j][k] = ' '
+    return board
+
+# increment the value of a spot on the board accordingly to its current value
+def increase_number(spot):
+    if spot == ' ': return 1
+    if spot == 'm': return 'm'
+    else: return spot+1    
+
+# increment the values of all spots beside a mine
+def add_numbers(board, row, column):
+    up, down, left, right = row-1, row+1, column-1, column+1
+    if board[row][column] == 'm':
+        if up>=0:
+            board[up][column] = increase_number(board[up][column])
+            if left>=0: board[up][left] = increase_number(board[up][left])
+            if right<len(board[row]): board[up][right] = increase_number(board[up][right])
+        if down<len(board):
+            board[down][column] = increase_number(board[down][column])
+            if left>=0: board[down][left] = increase_number(board[down][left])
+            if right<len(board[row]): board[down][right] = increase_number(board[down][right])
+        if left>=0: board[row][left] = increase_number(board[row][left])
+        if right<len(board[row]): board[row][right] = increase_number(board[row][right])
+    return
+
+# create the full board with mines and appropriate numbers
+def full_board(board, rows, columns):
+    for i in range(rows):
+        for j in range(columns):
+            add_numbers(board,i,j)
+    return board
+
 def minesweeper():
     mines = int(input("How many mines would you like? ")) # Number of mines
     rows = int(input("How many rows in the board? ")) # Number of rows
-    cols = int(input("How many columns in the board? ")) # Number of columns
-    # this block prints boards
-    def print_row(row, pos):
-        if pos < len(row): return str(row[pos]) + print_row(row,pos+1)
-        else: return ''    
-    def print_board(b, c_row):
-        if c_row < rows:
-            print(print_row(b[c_row],0))
-            return print_board(b, c_row+1)
-        else:
-            return    
+    cols = int(input("How many columns in the board? ")) # Number of columns    
     # this block creates the initial fully hidden board
-    hidden_space = ['_']
-    def start_board(board, size, spot):
-        def create_row(row, size, spot):
-            if spot<size:
-                row = row + hidden_space
-                return create_row(row, size, spot+1)
-            return row
-        row = [create_row(hidden_space, cols, 1)]
-        if spot < size:
-            board = board + row
-            return start_board(board, size, spot+1)
-        return board
-    player_board = start_board([], rows, 0)
-    print_board(player_board, 0)    
-    # this block creates the full revealed board
-    single_space = [' '] # Single block on the board
-    # empty_board(board, size, spot) creates an empty minesweeper board with
+    player_board = start_board(rows, cols)
+    print_board(player_board)    
     # user specified rows and columns
     frow = int(input("select row: "))
     fcolumn = int(input("select column: "))
-    def empty_board(board, size, spot):
-        # create_row(row, size, spot) creates a single row for the board
-        def create_row(row, size, spot):
-            if spot < size:
-                row = row + single_space
-                return create_row(row, size, spot+1)
-            return row
-        row = [create_row(single_space, cols, 1)] # A single row
-        if spot < size:
-            board = board + row
-            return empty_board(board, size, spot+1)
-        board[frow][fcolumn] = 'f'
-        if frow>0 and fcolumn>0: board[frow-1][fcolumn-1] = 'f'  
-        if frow>0: board[frow-1][fcolumn] = 'f'
-        if frow>0 and fcolumn<cols-1: board[frow-1][fcolumn+1] = 'f'
-        if fcolumn>0: board[frow][fcolumn-1] = 'f'
-        if fcolumn<cols-1: board[frow][fcolumn+1] = 'f'
-        if frow<rows-1 and fcolumn>0: board[frow+1][fcolumn-1] = 'f'
-        if frow<rows-1: board[frow+1][fcolumn] = 'f'
-        if frow<rows-1 and fcolumn<cols-1: board[frow+1][fcolumn+1] = 'f'
-        return board
-    empty = empty_board([], rows, 0) # The empty board
-    prob = mines / (rows * cols) # Probability of hitting a mine
-    # this block produces the complete game board
-    def add_mines(board, cmine, r, c):
-        if cmine < mines:
-            if r < rows:
-                if c < cols:
-                    if board[r][c] != 'f':
-                        if random.random() < prob:
-                            board[r][c] = 'm'
-                            return add_mines(board, cmine+1, r, c+1)
-                        else: return add_mines(board, cmine, r, c+1)
-                    else: return add_mines(board, cmine, r, c+1)
-                else: return add_mines(board, cmine, r+1, 0)
-            else: return add_mines(board, cmine, 0, 0)
-        else: return board
-    def remove_f(board,r,c):
-        if r< rows:
-            if c< cols:
-                if board[r][c] == 'f':
-                    board[r][c] = ' '
-                    return remove_f(board,r,c+1)
-                else: return remove_f(board,r,c+1)
-            else: return remove_f(board,r+1,0)
-        else: return board
-    mine_board = remove_f(add_mines(empty,0,0,0),0,0)
-    def count_mine(board, r, c):
-        def add_one(spot):
-            if spot == ' ': return 1
-            if spot == 'm': return 'm'
-            else: return spot+1
-        up, down, left, right = r-1, r+1, c-1, c+1
-        if board[r][c] == 'm':
-            if up>=0 and left>=0: board[r-1][c-1] = add_one(board[r-1][c-1])
-            if up>=0: board[r-1][c] = add_one(board[r-1][c])
-            if up>=0 and right<cols: 
-                board[r-1][c+1] = add_one(board[r-1][c+1])
-            if left>=0: board[r][c-1] = add_one(board[r][c-1])
-            if right<cols: board[r][c+1] = add_one(board[r][c+1])
-            if down<rows and left>=0: board[r+1][c-1] = add_one(board[r+1][c-1])
-            if down<rows: board[r+1][c] = add_one(board[r+1][c])
-            if down<rows and right<cols: 
-                board[r+1][c+1] = add_one(board[r+1][c+1])
-            return board
-        else: return board
-    def full_board(board, r, c):
-        if r < rows:
-            if c < cols:
-                board = count_mine(board, r, c)
-                return full_board(board, r, c+1)
-            else: return full_board(board, r+1, 0)
-        else: return board
-    end_board = full_board(mine_board,0,0)
+    mine_board = add_mines(empty_board(rows, cols, frow, fcolumn), mines, rows, cols)
+    end_board = full_board(mine_board,rows,cols)
+    
+    # count the number of blank spaces
     def count_blank(blist,r,c):
         if r < rows:
             if c < cols:
@@ -120,6 +118,8 @@ def minesweeper():
             else: return count_blank(blist,r+1,0)
         else: return blist
     b_list = count_blank([],0,0)
+    
+    # determine how many blank spaces are above a spot on the board
     def blank_above(bblock,pos):
         if pos < len(b_list):
             if (([b_list[pos][0]-1,b_list[pos][1]] in bblock or
@@ -131,6 +131,8 @@ def minesweeper():
                 return blank_above(bblock,pos+1)
             else: return blank_above(bblock,pos+1)
         else: return bblock
+        
+    # determine how many blank spaces are below a spot on the board
     def blank_below(bblock,pos):
         if pos >= 0:
             if (([b_list[pos][0]-1,b_list[pos][1]] in bblock or
@@ -142,10 +144,15 @@ def minesweeper():
                 return blank_below(bblock,pos-1)
             else: return blank_below(bblock,pos-1) 
         else: return bblock
+        
+    # examine larger areas of blank space around a spot
     def blank_block(r,c):
         above = blank_above([[r,c]],0)
         below = blank_below(above,len(b_list)-1)
         return blank_above(below,0) 
+    
+    # determine the number of spots around a player's move to reveal
+    # if the move selects a blank spot
     def freveal_list(rlist,r,c):    
         blanks = blank_block(frow,fcolumn)
         if r < rows:
@@ -157,6 +164,8 @@ def minesweeper():
                 else: return freveal_list(rlist,r,c+1)
             else: return freveal_list(rlist,r+1,0)
         else: return rlist
+        
+    # expand the players board such that they see the appropriate result
     def fexpand_board(r,c):
         if end_board[r][c] == 'm':
             return print("GG please try again :(")
@@ -175,15 +184,15 @@ def minesweeper():
     fexpand_board(frow,fcolumn)
     if str(player_board).count('_') == mines:
         print("Congratulations! You win!")
-        print_board(end_board,0)
+        print_board(end_board)
     else:
-        print_board(player_board,0)
+        print_board(player_board)
         def nextturn():
             nrow = int(input("select row: "))
             ncolumn = int(input("select column: "))
             if end_board[nrow][ncolumn] == 'm':
                 print("GG please try again :(")
-                print_board(end_board,0)
+                print_board(end_board)
                 return
             if end_board[nrow][ncolumn] == ' ':
                 def nreveal_list(rlist,r,c):    
@@ -207,17 +216,17 @@ def minesweeper():
                         return reveal_board(pos+1)
                 reveal_board(0)
                 if str(player_board).count('_') == mines:
-                    print_board(end_board,0)
+                    print_board(end_board)
                     return 'Congratulations! You win!'
                 else: 
-                    print_board(player_board,0)
+                    print_board(player_board)
                     return nextturn()                
             else:
                 player_board[nrow][ncolumn] = end_board[nrow][ncolumn]                
                 if str(player_board).count('_') == mines:
-                    print_board(end_board,0)
+                    print_board(end_board)
                     return 'Congratulations! You win!'
                 else: 
-                    print_board(player_board,0)
+                    print_board(player_board)
                     return nextturn()
         return nextturn()
