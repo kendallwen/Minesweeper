@@ -119,7 +119,7 @@ class Minesweeper:
         if self.started:
             if np.isnan(self.full_board[r][c]):
                 self.gameOver = True
-                print('You fucking suck')
+                print('Need more training')
             else:
                 self.expand(r, c)
                 print(self.player_board)
